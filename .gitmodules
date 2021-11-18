@@ -1,0 +1,6 @@
+[submodule "BuilDSL"]
+	path = BuilDSL
+	url = https://github.com/BuildIt-lang/easy_graphit.git
+[submodule "graphit"]
+	path = graphit
+	url = https://github.com/GraphIt-DSL/graphit.git
