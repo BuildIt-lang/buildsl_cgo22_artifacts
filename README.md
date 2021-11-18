@@ -150,7 +150,7 @@ bash run_dsl.sh
 
 If you have successfully compiled the dependencies and copied the skeleton file, you should see some generated C++ code. We will inspect the source file and the generated code. To understand how the DSL is implemented and to add more features open the `mm-dsl.cpp` in your favorite editor. We have `vim` and `nano` installed on our provided system. If you wish to use other editors, you can `scp` the file, modify it and upload it again. 
 
-Upon opening the file, you can the code is divided into many parts as follows - 
+Upon opening the file, you can see the code is divided into many parts as follows - 
 
   - Runtime Functions Declaration: This section declares a bunch of functions our DSL can assume are available in the runtime. This includes functions like malloc, memcpy and other CUDA functions. We will not provide the implementation of these to the DSL because they don't need specialization. 
   - Dual Array Type Declaration: In this section we define a templated type `dual_array` that can store an array of values on both CPUs and GPUs and move them around as required. This type has two "dynamic" pointers, one pointing to a buffer on the host and one pointing to a buffer on the GPU. It also has a static variable to determine where the actual values are currently located. This variable will change through the execution of the program as we move the buffers around. We also have a global variable to determine where the code is currently executing (`current_context`). This helps us generate different implementations for sections running on HOST and DEVICE. 
@@ -161,7 +161,7 @@ Upon opening the file, you can the code is divided into many parts as follows -
 You can notice that there are a few TODOs in the code left for you to complete. Let us fill them one by one and see how the generated code changes. 
 
 #### TODO#1
-Find the TODO#1 in the code. This is in the member function of our dual array type that returns the value at a particular index. You can this function has 4 specializations based on where the particular buffer is currently located and where the currrent code is running. You can see that the implementation for when the buffer is located where the code is currently executing is simple and just returns the value from the corresponding buffer. 
+Find the TODO#1 in the code. This is in the member function of our dual array type that returns the value at a particular index. You can see this function has 4 specializations based on where the particular buffer is currently located and where the currrent code is running. You can see that the implementation for when the buffer is located where the code is currently executing is simple and just returns the value from the corresponding buffer. 
 
 You are supposed to fill in the implementation when the buffer is located on the DEVICE, but the code is running on the HOST. You can insert the following implementation - 
 
