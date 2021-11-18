@@ -16,6 +16,7 @@ namespace runtime {
 	dyn_var<void(void*, void*, int)> to_host("runtime::to_host");
 	dyn_var<void(void*, void*, int)> memcpy("runtime::memcpy");
 }
+#define CUDA_KERNEL "run_on_device"
 
 /* DUAL ARRAY TYPE DECLARATION */
 #define HOST (1)
@@ -128,7 +129,7 @@ void mmvp(dyn_var<int> n, dual_array<float> &M, dual_array<float> &x, dual_array
 		current_context = DEVICE;
 		dyn_var<int> num_cta = (n + 511) / 512;
 
-		builder::annotate("run_on_device");
+		builder::annotate(CUDA_KERNEL);
 		for (dyn_var<int> cta = 0; cta < num_cta; cta = cta + 1) {
 			for(dyn_var<int> tid = 0; tid < 512; tid = tid + 1) {
 				dyn_var<int> r = cta * 512 + tid;

@@ -16,6 +16,7 @@ namespace runtime {
 	dyn_var<void(void*, void*, int)> to_host("runtime::to_host");
 	dyn_var<void(void*, void*, int)> memcpy("runtime::memcpy");
 }
+#define CUDA_KERNEL "run_on_device"
 
 /* DUAL ARRAY TYPE DECLARATION */
 #define HOST (1)
