@@ -226,7 +226,7 @@ y.move_to_device();
 
 This moves all the 3 arrays to the GPU before invoking the GPU kernel. Now we can run the DSL and you will notice that the generated code has 2 calls to CUDA kernels and the first one has 3 calls to `to_device`, a function that copies arrays from the host to the GPU. This code is now correct and should produce the right result. 
 
-But we can see and interesting difference for the next iteration that runs on the host (`iter == 2`). Because now the buffers have been moved to the GPU, the host side code whenever it needs to read or write these values, moves individual indices back and forth. This is correct but highly ineffecient. In our `mmvp` function we know that the whole array is going to be requied on the host, so we can move it back completely before we start execution. 
+But we can see and interesting difference for the next iteration that runs on the host (`iter == 2`). Because now the buffers have been moved to the GPU, the host side code whenever it needs to read or write these values, moves individual indices back and forth (this is result of the specialization we wrote in TODO#1). This is correct but highly ineffecient. In our `mmvp` function we know that the whole array is going to be requied on the host, so we can move it back completely before we start execution. 
 
 #### TODO#4
 Find the TODO#4 in the code. This is in the host side implementation of the `mmvp` function. We can add the following code there - 
@@ -240,3 +240,11 @@ y.move_to_host();
 These functions will move the arrays to the host upfront. Now the calls to the `get()` and `=` operators don't actually have to move the values one by one. Run the dsl again to see the final code generated showing 4 matrix multiplication operations 2 on the host and 2 on the GPU. 
 
 We have utilized the CUDA extraction pass from the framework and our methodology of using static variables to track properties about runtime values. 
+
+We have also provided the completed implementation in `mm-dsl-finished.cpp` if you need a reference at any point. 
+
+With this we have concluded the artificat evaluation of our paper. We have shown - 
+
+  - The graph DSL we implemented in BuilDSL generates code at par with the state of the art graph DSL GraphIt
+  - We demonstrated how a simple DSL for matrix multiplication with GPU and CPU code and automatically managed data transfers can be implemented in few lines of code (without runtime conditions and overheads)
+
