@@ -134,7 +134,7 @@ less outputs/buildsl_bfs_road.cu
 These files show the code generated for two different schedules for the Breadth First Search application. These code snippets are in the supplementary section of our original paper. 
 
 ### (Optional) Section 2: Write a simple DSL with BuilDSL
-The purpose of our paper is to show that it is easy to write DSLs with staging and BuilDSL. To demonstrate that we will write a simple DSL for matrix multiplication that generates GPU code. 
+The purpose of our paper is to show that it is easy to write DSLs with staging and BuilDSL. To demonstrate that we will write a simple DSL for matrix multiplication that generates GPU code. We will use static variable to implement an analysis and specialization for automatically moving buffers between HOST and DEVICE. 
 
 We have provided the skeleton code for this section in `mm-dsl-skeleton.cpp`. You can start by copying this into a new file with the following command in the top level directory of this repository - 
 
@@ -142,27 +142,101 @@ We have provided the skeleton code for this section in `mm-dsl-skeleton.cpp`. Yo
 cp mm-dsl-skeleton.cpp mm-dsl.cpp
 ```
 
-If you do not want to follow all the steps and just view the final results of the DSL, we have also provided the completed file `mm-dsl-finished.cpp`. You can copy that instead and run it directly with - 
-
-```
-cp mm-dsl-finished.cpp mm-dsl.cpp
-```
-
-In either case, run the DSL code to generate code for an application using the following command - 
+You can now run the DSL and the application to generate some code. At any point to compile and execute the DSL run - 
 
 ```
 bash run_dsl.sh
 ```
 
-If you have run the finished DSL, you can browse the generated code and the code in the cpp and skip rest of the steps. If you have copied the skeleton, we will build the DSL step by step.
+If you have successfully compiled the dependencies and copied the skeleton file, you should see some generated C++ code. We will inspect the source file and the generated code. To understand how the DSL is implemented and to add more features open the `mm-dsl.cpp` in your favorite editor. We have `vim` and `nano` installed on our provided system. If you wish to use other editors, you can `scp` the file, modify it and upload it again. 
 
+Upon opening the file, you can the code is divided into many parts as follows - 
 
-**Skip from here if you ran the finished file**
-Before we look at the results of the DSL, we will inspect the source file and understand various sections in it. Open the file mm-dsl.cpp in your favorite editor. We have `vim` and `nano` installed on our server.
+  - Runtime Functions Declaration: This section declares a bunch of functions our DSL can assume are available in the runtime. This includes functions like malloc, memcpy and other CUDA functions. We will not provide the implementation of these to the DSL because they don't need specialization. 
+  - Dual Array Type Declaration: In this section we define a templated type `dual_array` that can store an array of values on both CPUs and GPUs and move them around as required. This type has two "dynamic" pointers, one pointing to a buffer on the host and one pointing to a buffer on the GPU. It also has a static variable to determine where the actual values are currently located. This variable will change through the execution of the program as we move the buffers around. We also have a global variable to determine where the code is currently executing (`current_context`). This helps us generate different implementations for sections running on HOST and DEVICE. 
+  - Matrix Vector Product Implementation: This section actually defines the Matrix vector product operation - `y = M * x` where x and y are vectors and M is a square matrix. 
+  - Test App Written With DSL: This section has a simple application written using the DSL defined above. This app uses the types and functions we defined in the DSL. 
+  - Main Driver: Finally the section that invokes BuilDSL to generate code for the DSL based on inputs. 
 
-At the top of the file, we see all the BuilDSL includes and type imports. We also see some typedefs we have created for the matrix multiplication DSL. 
-We also have some function declarations that we will have in the runtime library for the generated code that we do not want to specialize. Like the function to load matrix from an mtx file. 
+You can notice that there are a few TODOs in the code left for you to complete. Let us fill them one by one and see how the generated code changes. 
 
-Next we have the implementation of the only operator in this DSL - the `mmvp` (Matrix Vector Product) operator. 
+#### TODO#1
+Find the TODO#1 in the code. This is in the member function of our dual array type that returns the value at a particular index. You can this function has 4 specializations based on where the particular buffer is currently located and where the currrent code is running. You can see that the implementation for when the buffer is located where the code is currently executing is simple and just returns the value from the corresponding buffer. 
 
-This operator takes a matrix (in CSR form), a vector and produces a vector by multiplying them. 
+You are supposed to fill in the implementation when the buffer is located on the DEVICE, but the code is running on the HOST. You can insert the following implementation - 
+
+```
+dyn_var<T> temp;
+runtime::to_host(&temp, &(array->device_buffer[index]), (int)sizeof(T));
+return temp;
+```
+
+What this implementation does is just moves the exact index to the HOST that we need to read and returns it. Such a specialization allows to make adjustments to the array from the host without copying the whole array back and forth. The second function `operator =` also has a similar specialization which is already filled it. We use the the static variable `current` and `current_context` to determine which specialization to invoke. You can run the DSL again with the command above, but nothing will change because haven't invoked this specialization yet. 
+
+#### TODO#2
+Find the TODO#2 in the code. This is in the implementation of our `mmvp` operator. We have an extra parameter to the function that statically tells it where to execute the logic. We have already filled in the logic for executing on the CPU serially. You have to fill in the code for execution on the GPU. 
+
+You can insert the following implementation - 
+
+```
+current_context = DEVICE;
+dyn_var<int> num_cta = (n + 511) / 512;
+
+builder::annotate(CUDA_KERNEL);
+for (dyn_var<int> cta = 0; cta < num_cta; cta = cta + 1) {
+        for(dyn_var<int> tid = 0; tid < 512; tid = tid + 1) {
+                dyn_var<int> r = cta * 512 + tid;
+                if (r < n) {
+                        y[r] = 0.0f;
+                        for (dyn_var<int> c = 0; c < n; c = c + 1) {
+                                y[r] = y[r].get() + M[r * n + c].get() * x[c].get();
+                        }
+                }
+        }
+}
+current_context = HOST;
+```
+
+This code does two things, first it sets the `current_context` to DEVICE. This tells all the specialization that the code is now running on the GPU. Next we use BuilDSL's CUDA annotation "CUDA_KERNEL" explained in Figure 5 of the paper to tell the framework that this loop nest should be mapped to a GPU. The inner most loop that iterates over the column is exactly the same, while individual rows are mapped to separate threads. 
+
+We can also navigate to the `test` function where there are two calls to the `mmvp` functions. We can change the second call (even iteration) to run on the GPU. Finally the function should look like this - 
+
+```
+if (iter % 2 == 0)
+        mmvp(n, M, x, y, HOST);
+else
+        mmvp(n, M, y, x, DEVICE);
+```
+
+At this point let us try running the code with the command `bash run_dsl.sh`. 
+You will notice that the execution fails with an error -
+
+> "Cannot move host array to device from device. Please insert moves at appropriate places"
+
+This is because our static analysis has figured out that the buffer currently resides on the HOST and is required on the DEVICE. There is no specialization possible for this because code executing on the GPU has no API functions to pull data from the host. 
+
+#### TODO#3
+To fix this we will have to manually move the whole array to the GPU when we need it. Find TODO#3 in the code and insert the following 3 lines - 
+
+```
+M.move_to_device();
+x.move_to_device();
+y.move_to_device();
+```
+
+This moves all the 3 arrays to the GPU before invoking the GPU kernel. Now we can run the DSL and you will notice that the generated code has 2 calls to CUDA kernels and the first one has 3 calls to `to_device`, a function that copies arrays from the host to the GPU. This code is now correct and should produce the right result. 
+
+But we can see and interesting difference for the next iteration that runs on the host (`iter == 2`). Because now the buffers have been moved to the GPU, the host side code whenever it needs to read or write these values, moves individual indices back and forth. This is correct but highly ineffecient. In our `mmvp` function we know that the whole array is going to be requied on the host, so we can move it back completely before we start execution. 
+
+#### TODO#4
+Find the TODO#4 in the code. This is in the host side implementation of the `mmvp` function. We can add the following code there - 
+
+```
+M.move_to_host();
+x.move_to_host();
+y.move_to_host();
+```
+
+These functions will move the arrays to the host upfront. Now the calls to the `get()` and `=` operators don't actually have to move the values one by one. Run the dsl again to see the final code generated showing 4 matrix multiplication operations 2 on the host and 2 on the GPU. 
+
+We have utilized the CUDA extraction pass from the framework and our methodology of using static variables to track properties about runtime values. 
