@@ -2,3 +2,6 @@ outputs/*
 dataset/*
 !dataset/Makefile
 !dataset/local.sh
+mm-dsl.cpp
+dsl.out
+
