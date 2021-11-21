@@ -110,7 +110,7 @@ struct dual_array_index {
 void mmvp(dyn_var<int> n, dual_array<float> &M, dual_array<float> &x, dual_array<float> &y, const int mode) {
 	if (mode == HOST) {	
 		// Host side implementation of y = M * x	
-		// TODO #4
+		// TODO#4
 		for (dyn_var<int> r = 0; r < n; r = r + 1) {
 			y[r] = 0.0f;
 			for (dyn_var<int> c = 0; c < n; c = c + 1) {
