@@ -29,6 +29,8 @@ All the requirements for both the sections are available on the system provided 
 
 ### Cloning the repository
 
+**If you are running the experiments on the server we have provided, we request you to create a folder for yourself in the `scratch` directory in the home directory of the user. This directory is placed on a network drive and has ample space as opposed to the home directory that has limited space**
+
 To start, first clone this repository using the following command - 
 
 ```
