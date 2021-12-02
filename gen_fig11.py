@@ -157,7 +157,7 @@ def compile_and_run(gtfile, binname, run_args, outputf):
 	f.write(output)
 	f.close()
 
-def compile_buildsl_application(appfile, progfile, driver_name, binname, compile_args):
+def compile_buildsl_application(appfile, progfile, driver_name, binname, compile_args, regs = 64):
 	global SCRATCH_PATH
 	global BUILDSL_PATH
 	global APPS_DIRECTORY
@@ -170,16 +170,16 @@ def compile_buildsl_application(appfile, progfile, driver_name, binname, compile
 	f.close()
 	cc = obtain_cc()[0]
 
-	NVCC_COMMAND = NVCC_PATH + " -ccbin " + CXX_COMPILER + " -rdc=true -gencode arch=compute_" + cc + ",code=sm_" + cc + " -std=c++11 -O3 -I " + BUILDSL_PATH + "/runtime -Xcompiler \"-w\" -Wno-deprecated-gpu-targets --use_fast_math -Xptxas \" -dlcm=ca --maxrregcount=64\" "
+	NVCC_COMMAND = NVCC_PATH + " -ccbin " + CXX_COMPILER + " -rdc=true -gencode arch=compute_" + cc + ",code=sm_" + cc + " -std=c++11 -O3 -I " + BUILDSL_PATH + "/runtime -Xcompiler \"-w\" -Wno-deprecated-gpu-targets --use_fast_math -Xptxas \" -dlcm=ca --maxrregcount=" + str(regs) + "\" "
 	
 	get_command_output(NVCC_COMMAND + progfile + " " + APPS_DIRECTORY + "/" + driver_name + " -o " + binname)
 
-def compile_and_run_buildsl(appfile, progname, driver_name, binname, compile_args, run_args, outputf):
+def compile_and_run_buildsl(appfile, progname, driver_name, binname, compile_args, run_args, outputf, regs = 64):
 	global SCRATCH_PATH
 	global BUILDSL_PATH
 	global GPU_PREFIX
 
-	compile_buildsl_application(appfile, SCRATCH_PATH + "/" + progname, driver_name, binname, compile_args)
+	compile_buildsl_application(appfile, SCRATCH_PATH + "/" + progname, driver_name, binname, compile_args, regs)
 	output = get_command_output(GPU_PREFIX + SCRATCH_PATH + "/" + binname + " " + run_args)
 	f = open(outputf, "w")
 	f.write(output)
@@ -260,7 +260,7 @@ def run_buildsl_ds():
 	delta["indochina"] = 10000
 	delta["rusa"] = 80000
 	delta["rcentral"] = 30000
-	delta["rca"] = 20000
+	delta["rca"] = 70000
 
 	DS = BUILDSL_PATH + "/build/apps/sssp"
 	
@@ -269,7 +269,7 @@ def run_buildsl_ds():
 		compile_and_run_buildsl(DS, "buildsl_sssp_power.cu", "driver_sssp.cu", "buildsl_ds_power", str(2 * num_sm) + " 512 power", graph + " 0 " + str(delta[name]), "ds_" + name + "_buildsl.out")
 		print(str(i+1) + "/" + str(len(GRAPH_ALL)))
 	for i, (name, graph) in enumerate(GRAPH_ROAD):
-		compile_and_run_buildsl(DS, "buildsl_sssp_road.cu", "driver_sssp.cu", "buildsl_ds_road", str(num_sm/2) + " 256", graph + " 0 " + str(delta[name]), "ds_" + name + "_buildsl.out")
+		compile_and_run_buildsl(DS, "buildsl_sssp_road.cu", "driver_sssp.cu", "buildsl_ds_road", str(num_sm/2) + " 256", graph + " 0 " + str(delta[name]), "ds_" + name + "_buildsl.out", 512)
 		print(str(i+1+len(GRAPH_SOCIAL)) + "/" + str(len(GRAPH_ALL)))
 		
 def run_bc():
@@ -311,7 +311,7 @@ def run_buildsl_bc():
 		compile_and_run_buildsl(BC, "buildsl_bc_power.cu", "driver_bc.cu", "buildsl_bc_power", str(2 * num_sm) + " 512 power", graph + " 0 " + str(threshold[name]), "bc_" + name + "_buildsl.out")
 		print(str(i+1) + "/" + str(len(GRAPH_ALL)))
 	for i, (name, graph) in enumerate(GRAPH_ROAD):
-		compile_and_run_buildsl(BC, "buildsl_bc_road.cu", "driver_bc.cu", "buildsl_bc_road", str(num_sm/2) + " 256", graph + " 0 " + " 0", "bc_" + name + "_buildsl.out")
+		compile_and_run_buildsl(BC, "buildsl_bc_road.cu", "driver_bc.cu", "buildsl_bc_road", str(num_sm/2) + " 256", graph + " 0 " + " 0", "bc_" + name + "_buildsl.out", 512)
 		print(str(i+1+len(GRAPH_SOCIAL)) + "/" + str(len(GRAPH_ALL)))
 	
 
@@ -354,7 +354,7 @@ def run_buildsl_bfs():
 		compile_and_run_buildsl(BFS, "buildsl_bfs_power.cu", "driver_bfs.cu", "buildsl_bfs_power", str(2 * num_sm) + " 512 power", graph + " 0 " + str(threshold[name]), "bfs_" + name + "_buildsl.out")
 		print(str(i+1) + "/" + str(len(GRAPH_ALL)))
 	for i, (name, graph) in enumerate(GRAPH_ROAD):
-		compile_and_run_buildsl(BFS, "buildsl_bfs_road.cu", "driver_bfs.cu", "buildsl_bfs_road", str(num_sm/2) + " 256", graph + " 0 " + " 0", "bfs_" + name + "_buildsl.out")
+		compile_and_run_buildsl(BFS, "buildsl_bfs_road.cu", "driver_bfs.cu", "buildsl_bfs_road", str(num_sm/2) + " 256", graph + " 0 " + " 0", "bfs_" + name + "_buildsl.out", 512)
 		print(str(i+1+len(GRAPH_SOCIAL)) + "/" + str(len(GRAPH_ALL)))
 
 def read_execution_time(filename):
