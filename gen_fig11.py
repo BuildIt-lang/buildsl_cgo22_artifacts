@@ -252,11 +252,11 @@ def run_buildsl_ds():
 	global BUILDSL_PATH
 	num_sm = obtain_cc()[1]
 	delta = {}
-	delta["orkut"] = 22
+	delta["orkut"] = 40
 	delta["livejournal"] = 120
-	delta["twitter"] = 15
+	delta["twitter"] = 1
 	delta["sinaweibo"] = 15
-	delta["hollywood"] = 15
+	delta["hollywood"] = 45
 	delta["indochina"] = 10000
 	delta["rusa"] = 80000
 	delta["rcentral"] = 30000
