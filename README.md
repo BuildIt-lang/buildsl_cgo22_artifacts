@@ -37,11 +37,10 @@ To start, first clone this repository using the following command -
 git clone --recursive https://github.com/BuildIt-lang/buildsl_cgo22_artifacts.git
 ```
 
-If you have already cloned the repository without the recursive flag, you can run the following commands inside the cloned directory to fetch all the submodules - 
+If you have already cloned the repository without the recursive flag, you can run the following command inside the cloned directory to fetch all the submodules - 
 
 ```
-git submodules init
-git submodules update
+git submodule update --init --recursive
 ```
 
 Now navigate to the main repostitory and continue the rest of the steps. 
