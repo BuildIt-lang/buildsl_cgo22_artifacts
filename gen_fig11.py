@@ -257,7 +257,7 @@ def run_buildsl_ds():
 	delta["twitter"] = 1
 	delta["sinaweibo"] = 15
 	delta["hollywood"] = 45
-	delta["indochina"] = 10000
+	delta["indochina"] = 280
 	delta["rusa"] = 80000
 	delta["rcentral"] = 30000
 	delta["rca"] = 70000
@@ -403,31 +403,37 @@ def gen_fig11():
 	short_names["rcentral"] = "RC"
 
 	filepath = SCRATCH_PATH + "/fig11.txt"
+	ratiofile = SCRATCH_PATH + "/ratio.dat"
 	f = open(filepath, "w")
+	f2 = open(ratiofile, "w")
 	f.write("GraphIt execution times\n")	
 	f.write("-" * 91)
 	f.write("\n")
 	f.write("|")
 	print_cell(f, "Graph")
 	print_cell(f, "PR")
-	print_cell(f, "CC")
 	print_cell(f, "BFS")
-	print_cell(f, "BC")
+	print_cell(f, "CC")
 	print_cell(f, "SSSP")
+	print_cell(f, "BC")
 	f.write("\n")
 	f.write("-" * 91)
 	f.write("\n")
 	
 	for graph, _  in GRAPH_ALL:
 		f.write("|")
+		f2.write(short_names[graph])
 		print_cell(f, short_names[graph])
-		for app in ["pr", "cc", "bfs", "bc", "ds"]:
+		for app in ["pr", "bfs", "cc", "ds", "bc"]:
 			fname = app + "_" + graph + "_graphit" + ".out"
 			val = read_execution_time(fname)
 			fname = app + "_" + graph + "_buildsl" + ".out"
 			val2 = read_execution_time(fname)
 			print_cell(f, str(val2) + "/" + str(val))
+			ratio = float(int(float(val2) / float(val) * 10000))/100.0
+			f2.write("\t" + str(ratio))
 		f.write("\n")
+		f2.write("\n")
 	
 	f.write("-" * 91)
 	f.write("\n")
@@ -437,6 +443,7 @@ def gen_fig11():
 	
 	
 	f.close()
+	f2.close()
 	print(open(filepath, "r").read())
 	print("# This table is generated at: ", filepath)
 
